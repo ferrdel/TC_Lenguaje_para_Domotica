@@ -26,10 +26,16 @@ def ejecutar_analisis(codigo_prueba):
         print(f"\n[PROCESO INTERRUMPIDO] {error}")
 
 if __name__ == "__main__":
-    # Código de prueba simple de domótica
     codigo_domotica = """
-    encender(luz_sala);
-    esperar(30);
-    apagar(luz_sala);
+    encender(luz_exterior);
+    
+    si (hora > 18) {
+        encender(luces_sala);
+        esperar(10);
+    }
+    
+    repetir (3) {
+        apagar(alarma);
+    }
     """
     ejecutar_analisis(codigo_domotica)
