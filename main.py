@@ -30,7 +30,6 @@ if __name__ == "__main__":
     codigo_domotica = """
     encender(luz_sala);
     esperar(30);
-    @ # Esto generará un error léxico intencional para probar
     apagar(luz_sala);
     """
     ejecutar_analisis(codigo_domotica)
