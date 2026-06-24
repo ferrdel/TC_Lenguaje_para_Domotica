@@ -1,15 +1,18 @@
 import reglas_simples
 import reglas_control
 
+class ErrorSincronizacion(Exception):
+    """Excepción silenciosa para abortar una regla rota sin crashear el parser."""
+    pass
+
 class ParserDomotica:
     def __init__(self, lista_tokens):
         self.tokens = lista_tokens
         self.posicion = 0
         self.token_actual = self.tokens[self.posicion] if self.tokens else None
-        self.errores = []  # Lista para acumular errores sintácticos
+        self.errores = []  # Guardará diccionarios: {"tipo": "Real"|"Consecuencia", "mensaje": "..."}
 
     def avanzar(self):
-        """Mueve el puntero de análisis al siguiente token."""
         self.posicion += 1
         if self.posicion < len(self.tokens):
             self.token_actual = self.tokens[self.posicion]
@@ -17,79 +20,87 @@ class ParserDomotica:
             self.token_actual = None
 
     def sincronizar(self):
-        """
-        Recuperación de errores: Descarta tokens hasta encontrar un delimitador seguro
-        para evitar una cascada de errores falsos.
-        """
-        tokens_seguros = ["PUNTO_COMA", "LLAVE_DER"]
+        """Descarta basura hasta encontrar un límite seguro de comando."""
+        tokens_seguros = ["PUNTO_COMA", "LLAVE_DER", "LLAVE_IZQ"]
         
         while self.token_actual and self.token_actual.tipo not in tokens_seguros:
             self.avanzar()
             
-        # Si frenó en un token seguro, lo consumimos para limpiar la línea y seguir
-        if self.token_actual and self.token_actual.tipo in tokens_seguros:
+        if self.token_actual and self.token_actual.tipo == "PUNTO_COMA":
             self.avanzar()
 
     def consumir(self, tipo_esperado):
-        """
-        Verifica el token. Si hay error, lo anota en la lista y llama a sincronizar()
-        en lugar de abortar el programa.
-        """
+        """Las fallas aquí son ERRORES REALES (rompen la estructura interna del comando)."""
         if self.token_actual and self.token_actual.tipo == tipo_esperado:
             self.avanzar()
         else:
-            # 1. Registrar el error
             encontrado = self.token_actual.tipo if self.token_actual else "FIN_DE_ARCHIVO"
             linea = self.token_actual.linea if self.token_actual else "desconocida"
             col = self.token_actual.columna if self.token_actual else "desconocida"
             
-            mensaje = f"Error Sintáctico [L:{linea}, C:{col}]: Se esperaba '{tipo_esperado}', pero se encontró '{encontrado}'"
-            self.errores.append(mensaje)
-            
-            # 2. Intentar recuperar el contexto
-            self.sincronizar()
+            # Clasificado como ERROR REAL
+            self.errores.append({
+                "tipo": "Real",
+                "mensaje": f"Error Sintáctico [L:{linea}, C:{col}]: Se esperaba '{tipo_esperado}', pero se encontró '{encontrado}'"
+            })
+            raise ErrorSincronizacion()
 
     def parse_programa(self):
-        """Regla inicial."""
         self.parse_lista_comandos()
-        
         if self.token_actual is not None:
-            self.errores.append(f"Error Sintáctico: Tokens huérfanos al final del archivo en L:{self.token_actual.linea}")
-            
-        # Reporte final
-        if self.errores:
-            print("\n[!] EL ANÁLISIS SINTÁCTICO FINALIZÓ CON ERRORES:")
-            for err in self.errores:
-                print(f" - {err}")
-        else:
-            print("\n[AST] Análisis sintáctico completado con éxito. Sin errores.")
+            # Ahora la basura del final se etiqueta correctamente como daño colateral
+            self.errores.append({
+                "tipo": "Consecuencia",
+                "mensaje": f"Efecto Colateral [L:{self.token_actual.linea}]: Símbolo '{self.token_actual.valor}' huérfano al final del archivo"
+            })
 
     def parse_lista_comandos(self):
-        """<lista_comandos> -> <comando> <lista_comandos> | ε"""
+        """Las fallas en el lazo principal son CONSECUENCIAS de un descarte previo (esquirlas de pánico)."""
         first_comando = ["ENCENDER", "APAGAR", "ESPERAR", "SI", "REPETIR"]
         
-        if self.token_actual and self.token_actual.tipo in first_comando:
+        if not self.token_actual or self.token_actual.tipo == "LLAVE_DER":
+            return
+            
+        if self.token_actual.tipo in first_comando:
             self.parse_comando()
+            self.parse_lista_comandos()
+        else:
+            # Clasificado como EFECTO COLATERAL (Consecuencia del modo pánico)
+            self.errores.append({
+                "tipo": "Consecuencia",
+                "mensaje": f"Efecto Colateral [L:{self.token_actual.linea}]: Símbolo '{self.token_actual.valor}' huérfano debido a una sincronización previa"
+            })
+            
+            token_antes = self.token_actual
+            self.sincronizar()
+            if self.token_actual == token_antes:
+                self.avanzar()
+                
             self.parse_lista_comandos()
 
     def parse_comando(self):
-        """Distribuidor LL(1)"""
         if not self.token_actual:
             return
             
         tipo = self.token_actual.tipo
         
-        if tipo == "ENCENDER":
-            reglas_simples.parse_encender(self)
-        elif tipo == "APAGAR":
-            reglas_simples.parse_apagar(self)
-        elif tipo == "ESPERAR":
-            reglas_simples.parse_esperar(self)
-        elif tipo == "SI":
-            reglas_control.parse_condicional(self)
-        elif tipo == "REPETIR":
-            reglas_control.parse_repeticion(self)
-        else:
-            # Si el inicio del comando es cualquier otra cosa, anotamos y sincronizamos
-            self.errores.append(f"Error Sintáctico [L:{self.token_actual.linea}]: Comando no reconocido '{tipo}'")
+        try:
+            if tipo == "ENCENDER":
+                reglas_simples.parse_encender(self)
+            elif tipo == "APAGAR":
+                reglas_simples.parse_apagar(self)
+            elif tipo == "ESPERAR":
+                reglas_simples.parse_esperar(self)
+            elif tipo == "SI":
+                reglas_control.parse_condicional(self)
+            elif tipo == "REPETIR":
+                reglas_control.parse_repeticion(self)
+            else:
+                self.errores.append({
+                    "tipo": "Real",
+                    "mensaje": f"Error Sintáctico [L:{self.token_actual.linea}]: Comando no reconocido '{tipo}'"
+                })
+                self.sincronizar()
+                
+        except ErrorSincronizacion:
             self.sincronizar()
