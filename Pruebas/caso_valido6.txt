@@ -1,0 +1,6 @@
+repetir (4) {
+    encender(luz_frontal);
+    esperar(3);
+    apagar(luz_frontal);
+    esperar(2);
+}

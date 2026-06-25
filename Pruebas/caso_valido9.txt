@@ -1,0 +1,6 @@
+apagar(luces_dormitorio);
+encender(cafetera_cocina);
+esperar(10);
+si (luminosidad_exterior > 50) {
+    apagar(luces_sala);
+}

@@ -1,0 +1,4 @@
+encender(sistema_riego);
+esperar(20);
+apagar(sistema_riego);
+encender(notificacion_celular);
