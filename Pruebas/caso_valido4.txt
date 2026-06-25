@@ -1,0 +1,11 @@
+esperar(1);
+encender(bomba_agua);
+
+repetir (5) {
+    si (nivel_tanque < limite_minimo) {
+        encender(valvula_secundaria);
+    }
+}
+
+esperar(60);
+apagar(bomba_agua);

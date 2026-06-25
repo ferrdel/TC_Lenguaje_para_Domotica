@@ -1,0 +1,8 @@
+encender(ventilador);
+
+repetir (infinito) 
+    encender(parpadeo);
+    esperar(1);
+}
+
+apagar(ventilador);

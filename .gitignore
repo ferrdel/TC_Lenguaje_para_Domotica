@@ -2,7 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
+*.pyc
 # Entornos Virtuales
 venv/
 env/
@@ -14,3 +14,7 @@ env/
 # Sistema Operativo
 .DS_Store
 Thumbs.db
+
+# Archivos descargados de la app
+*.zip
+*.png

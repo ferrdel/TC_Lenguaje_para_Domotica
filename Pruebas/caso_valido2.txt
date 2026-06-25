@@ -1,0 +1,14 @@
+encender(sistema_central);
+
+si (temperatura > 28) {
+    encender(aire_acondicionado);
+    repetir (3) {
+        esperar(15);
+        si (humedad < 40) {
+            encender(humidificador);
+        }
+    }
+    apagar(aire_acondicionado);
+}
+
+apagar(sistema_central);

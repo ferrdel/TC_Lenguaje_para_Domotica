@@ -1,0 +1,8 @@
+encender(tele);
+apagar(luces_pieza);
+
+modo_cine_inventado;
+
+si (noche == 1) {
+    encender(luz_pasillo);
+    esperar(5);

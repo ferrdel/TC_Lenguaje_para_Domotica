@@ -1,0 +1,6 @@
+encender(luz_cuarto;
+esperar(10);
+
+si (temp > 20 {
+    apagar(estufa);
+}

@@ -1,5 +1,6 @@
 import reglas_simples
 import reglas_control
+from ast_nodes import NodoPrograma
 
 class ErrorSincronizacion(Exception):
     """Excepción silenciosa para abortar una regla rota sin crashear el parser."""
@@ -10,7 +11,8 @@ class ParserDomotica:
         self.tokens = lista_tokens
         self.posicion = 0
         self.token_actual = self.tokens[self.posicion] if self.tokens else None
-        self.errores = []  # Guardará diccionarios: {"tipo": "Real"|"Consecuencia", "mensaje": "..."}
+        self.errores = [] 
+        self.arbol_ast = None # Acá guardamos el árbol para Streamlit
 
     def avanzar(self):
         self.posicion += 1
@@ -20,9 +22,7 @@ class ParserDomotica:
             self.token_actual = None
 
     def sincronizar(self):
-        """Descarta basura hasta encontrar un límite seguro de comando."""
         tokens_seguros = ["PUNTO_COMA", "LLAVE_DER", "LLAVE_IZQ"]
-        
         while self.token_actual and self.token_actual.tipo not in tokens_seguros:
             self.avanzar()
             
@@ -30,7 +30,6 @@ class ParserDomotica:
             self.avanzar()
 
     def consumir(self, tipo_esperado):
-        """Las fallas aquí son ERRORES REALES (rompen la estructura interna del comando)."""
         if self.token_actual and self.token_actual.tipo == tipo_esperado:
             self.avanzar()
         else:
@@ -38,7 +37,6 @@ class ParserDomotica:
             linea = self.token_actual.linea if self.token_actual else "desconocida"
             col = self.token_actual.columna if self.token_actual else "desconocida"
             
-            # Clasificado como ERROR REAL
             self.errores.append({
                 "tipo": "Real",
                 "mensaje": f"Error Sintáctico [L:{linea}, C:{col}]: Se esperaba '{tipo_esperado}', pero se encontró '{encontrado}'"
@@ -46,29 +44,35 @@ class ParserDomotica:
             raise ErrorSincronizacion()
 
     def parse_programa(self):
-        self.parse_lista_comandos()
+        lista_final_nodos = self.parse_lista_comandos()
+        
         if self.token_actual is not None:
-            # Ahora la basura del final se etiqueta correctamente como daño colateral
             self.errores.append({
                 "tipo": "Consecuencia",
                 "mensaje": f"Efecto Colateral [L:{self.token_actual.linea}]: Símbolo '{self.token_actual.valor}' huérfano al final del archivo"
             })
+            
+        # ¡Coronamos el árbol!
+        self.arbol_ast = NodoPrograma(comandos=lista_final_nodos)
+        return self.arbol_ast
 
     def parse_lista_comandos(self):
-        """Las fallas en el lazo principal son CONSECUENCIAS de un descarte previo (esquirlas de pánico)."""
+        lista_nodos = []
         first_comando = ["ENCENDER", "APAGAR", "ESPERAR", "SI", "REPETIR"]
         
         if not self.token_actual or self.token_actual.tipo == "LLAVE_DER":
-            return
+            return lista_nodos
             
         if self.token_actual.tipo in first_comando:
-            self.parse_comando()
-            self.parse_lista_comandos()
+            nodo = self.parse_comando()
+            if nodo:
+                lista_nodos.append(nodo)
+            lista_nodos.extend(self.parse_lista_comandos())
         else:
-            # Clasificado como EFECTO COLATERAL (Consecuencia del modo pánico)
+            # CORRECCIÓN: Ahora es un error sintáctico REAL, no un efecto colateral
             self.errores.append({
-                "tipo": "Consecuencia",
-                "mensaje": f"Efecto Colateral [L:{self.token_actual.linea}]: Símbolo '{self.token_actual.valor}' huérfano debido a una sincronización previa"
+                "tipo": "Real",
+                "mensaje": f"Error Sintáctico [L:{self.token_actual.linea}]: Instrucción no válida '{self.token_actual.valor}'. Se esperaba un comando (encender, apagar, si, esperar, repetir)."
             })
             
             token_antes = self.token_actual
@@ -76,25 +80,28 @@ class ParserDomotica:
             if self.token_actual == token_antes:
                 self.avanzar()
                 
-            self.parse_lista_comandos()
+            lista_nodos.extend(self.parse_lista_comandos())
+            
+        return lista_nodos
 
     def parse_comando(self):
         if not self.token_actual:
-            return
+            return None
             
         tipo = self.token_actual.tipo
+        nodo = None
         
         try:
             if tipo == "ENCENDER":
-                reglas_simples.parse_encender(self)
+                nodo = reglas_simples.parse_encender(self)
             elif tipo == "APAGAR":
-                reglas_simples.parse_apagar(self)
+                nodo = reglas_simples.parse_apagar(self)
             elif tipo == "ESPERAR":
-                reglas_simples.parse_esperar(self)
+                nodo = reglas_simples.parse_esperar(self)
             elif tipo == "SI":
-                reglas_control.parse_condicional(self)
+                nodo = reglas_control.parse_condicional(self)
             elif tipo == "REPETIR":
-                reglas_control.parse_repeticion(self)
+                nodo = reglas_control.parse_repeticion(self)
             else:
                 self.errores.append({
                     "tipo": "Real",
@@ -104,3 +111,5 @@ class ParserDomotica:
                 
         except ErrorSincronizacion:
             self.sincronizar()
+            
+        return nodo

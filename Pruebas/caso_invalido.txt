@@ -1,6 +1,0 @@
-encender(luz_patio)
-esperar(5);
-luces_raras;
-si (hora > ) {
-    apagar(123);
-}
