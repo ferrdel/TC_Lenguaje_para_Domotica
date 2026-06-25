@@ -6,12 +6,18 @@ import io
 import zipfile
 
 # ========================================================
-# FUNCIÓN RECURSIVA DEL AST
+# [MÓDULO DE VISUALIZACIÓN] - RECORRIDO DEL AST (TREE WALK)
 # ========================================================
 def construir_grafo_recursivo(nodo, dot):
+    """
+    Realiza un recorrido recursivo en profundidad (Depth-First Search) sobre el Árbol 
+    de Sintaxis Abstracta en memoria para generar una representación visual mediante Graphviz.
+    Mapea las clases de dominio (Nodos) a atributos gráficos (formas y colores).
+    """
     if not nodo:
         return
 
+    # Utilización de la dirección de memoria como Identificador Único Universal (UUID) para Graphviz
     nodo_id = str(id(nodo))
     clase_nodo = nodo.__class__.__name__
 
@@ -20,6 +26,7 @@ def construir_grafo_recursivo(nodo, dot):
     etiqueta = "Desconocido"
     ramas = []
 
+    # [MAPEO DE DATOS A UI]: Traducción de la estructura abstracta a elementos visuales
     if clase_nodo == "NodoPrograma":
         etiqueta = "Programa"
         color_fondo = '#AED6F1'
@@ -39,8 +46,10 @@ def construir_grafo_recursivo(nodo, dot):
         color_fondo = '#EBDEF0'
         ramas = nodo.bloque
 
+    # Instanciación del vértice (nodo) en el motor gráfico
     dot.node(name=nodo_id, label=etiqueta, shape=forma, style='filled', fillcolor=color_fondo)
 
+    # Resolución de las aristas (edges) hacia los nodos subordinados
     for hijo in ramas:
         if hijo is not None:
             hijo_id = str(id(hijo))
@@ -49,10 +58,14 @@ def construir_grafo_recursivo(nodo, dot):
 
 
 # ========================================================
-# MOTOR DE PROCESAMIENTO EN SEGUNDO PLANO (Para exportaciones)
+# [PROCESAMIENTO BATCH] - MOTOR AISLADO PARA EXPORTACIONES
 # ========================================================
 def procesar_script_completo(codigo, nombre_archivo):
-    """Procesa un script y devuelve el texto del reporte y el objeto Graphviz si es válido."""
+    """
+    Encapsula el ciclo de vida completo del compilador (Lexer -> Parser -> AST).
+    Se ejecuta en un contexto aislado para procesar archivos en segundo plano
+    sin alterar el estado de la interfaz gráfica principal (Session State).
+    """
     lexer = Lexer(codigo)
     tokens = lexer.tokenizar()
     
@@ -66,7 +79,7 @@ def procesar_script_completo(codigo, nombre_archivo):
         except Exception:
             pass
 
-    # 1. Armar el reporte de texto
+    # [GENERACIÓN DE REPORTES]: Compilación de logs
     reporte = f"=== REPORTE DE ANÁLISIS SINTÁCTICO: {nombre_archivo} ===\n\n"
     reporte += f"[CÓDIGO ORIGINAL]\n{codigo}\n\n[RESULTADOS]\n"
     
@@ -81,7 +94,7 @@ def procesar_script_completo(codigo, nombre_archivo):
     else:
         reporte += "ESTADO: ✅ Aprobado (AST Generado correctamente)\n"
 
-    # 2. Armar el Grafo (solo si no hay errores)
+    # [RENDERIZADO HEADLESS]: Armado del grafo en memoria sin inyección en UI
     grafo = None
     if parser and not parser.errores and hasattr(parser, 'arbol_ast') and parser.arbol_ast:
         grafo = graphviz.Digraph()
@@ -94,7 +107,7 @@ def procesar_script_completo(codigo, nombre_archivo):
 
 
 # ========================================================
-# INTERFAZ WEB PRINCIPAL
+# [INTERFAZ REACTIVA] - CONTROLADOR PRINCIPAL (STREAMLIT)
 # ========================================================
 st.set_page_config(page_title="Compilador Domótica", layout="wide")
 st.title("🏠 Analizador Sintáctico - Domótica")
@@ -104,6 +117,7 @@ col_izq, col_der = st.columns([1, 2], gap="large")
 with col_izq:
     st.subheader("Control de Archivos")
     
+    # Manejo explícito del estado de sesión para permitir resets limpios de la UI
     if "uploader_key" not in st.session_state:
         st.session_state.uploader_key = 0
     
@@ -133,20 +147,19 @@ with col_izq:
     st.subheader("Consola de errores")
     consola = st.container(height=400, border=True)
     
-    # Variables globales para el renderizado
     reporte_actual_txt = ""
     grafo_actual = None
 
     if archivo_actual is not None:
+        # [I/O DECODING]: Tolerancia a distintas codificaciones de texto (UTF-8 vs Latin-1)
         try:
             codigo = archivo_actual.getvalue().decode("utf-8")
         except UnicodeDecodeError:
             codigo = archivo_actual.getvalue().decode("latin-1")
             
-        # Ejecutamos el motor centralizado
         reporte_actual_txt, grafo_actual = procesar_script_completo(codigo, archivo_actual.name)
         
-        # Leemos los datos en crudo para las tarjetas visuales
+        # [INSTANCIACIÓN REACTIVA]: Análisis en tiempo real para métricas de pantalla
         lexer_temp = Lexer(codigo)
         tokens_temp = lexer_temp.tokenizar()
         parser_temp = ParserDomotica(tokens_temp) if not lexer_temp.errores else None
@@ -158,12 +171,14 @@ with col_izq:
                 
         total_errores = len(lexer_temp.errores) + (len(parser_temp.errores) if parser_temp else 0)
 
+        # Dashboard de métricas lexicológicas
         col_m1, col_m2, col_m3 = consola.columns(3)
         col_m1.metric("Líneas", len(codigo.split('\n')))
         col_m2.metric("Tokens", len(tokens_temp))
         col_m3.metric("Errores", total_errores, delta=None if total_errores == 0 else "Revisar", delta_color="inverse")
         consola.markdown("---")
 
+        # [PRESENTACIÓN DE DIAGNÓSTICO]: Filtrado y formateo de excepciones sintácticas
         if lexer_temp.errores:
             consola.markdown("**[ERRORES LÉXICOS]**")
             for err in lexer_temp.errores:
@@ -186,13 +201,16 @@ with col_izq:
     else:
         consola.info("Esperando carga de archivos...")
 
-    # --- BOTONES DE DESCARGA DE REPORTES (IZQUIERDA) ---
+    # ========================================================
+    # [CONTROLADORES DE DESCARGA] - EXPORTACIÓN EN BYTES
+    # ========================================================
     if archivos_subidos:
         st.markdown("<br>", unsafe_allow_html=True)
         col_dl1, col_dl2 = st.columns(2)
         with col_dl1:
             st.download_button("📄 Bajar Reporte Actual", data=reporte_actual_txt, file_name=f"Reporte_{archivo_actual.name}.txt", use_container_width=True)
         with col_dl2:
+            # Creación de buffer en memoria (RAM) para compresión ZIP sin tocar el disco duro
             zip_buffer_txt = io.BytesIO()
             with zipfile.ZipFile(zip_buffer_txt, "w", zipfile.ZIP_DEFLATED) as zip_file:
                 for nombre, arch in nombres_archivos.items():
@@ -200,7 +218,6 @@ with col_izq:
                     rep_txt, _ = procesar_script_completo(cod, nombre)
                     zip_file.writestr(f"Reporte_{nombre}.txt", rep_txt)
             st.download_button("📚 Bajar Todos (ZIP)", data=zip_buffer_txt.getvalue(), file_name="Reportes_Domotica.zip", mime="application/zip", use_container_width=True)
-
 
 with col_der:
     titulo_ast = f"AST - {archivo_actual.name}" if archivo_actual else "AST (Árbol de Sintaxis Abstracta)"
@@ -211,14 +228,12 @@ with col_der:
     with marco_grafo:
         if archivo_actual is not None:
             if grafo_actual:
-                # El componente de Streamlit tiene un botón de "Pantalla completa" en la esquina superior derecha
                 st.graphviz_chart(grafo_actual, use_container_width=True)
             else:
                 st.markdown("<br><br><br><br><center><i>Hay errores en el código. Arreglalos para generar el AST.</i></center>", unsafe_allow_html=True)
         else:
             st.markdown("<br><br><br><br><center><i>El árbol se generará aquí...</i></center>", unsafe_allow_html=True)
 
-    # --- BOTONES DE DESCARGA DE IMÁGENES (DERECHA) ---
     if archivos_subidos:
         st.markdown("<br>", unsafe_allow_html=True)
         col_img1, col_img2 = st.columns(2)

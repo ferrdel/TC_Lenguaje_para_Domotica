@@ -2,43 +2,59 @@ from dataclasses import dataclass, field
 from typing import List
 
 # ==========================================
-# CLASE BASE
+# CLASE BASE ABSTRACTA
 # ==========================================
 @dataclass
 class NodoAST:
-    """Clase padre genérica para todos los nodos del árbol."""
+    """
+    Clase base para el polimorfismo del Árbol de Sintaxis Abstracta (AST).
+    Todos los nodos heredan de esta estructura para facilitar el tipado estático
+    y los recorridos recursivos.
+    """
     pass
 
 # ==========================================
-# NODO RAÍZ (El tronco del árbol)
+# NODO RAÍZ (Punto de entrada)
 # ==========================================
 @dataclass
 class NodoPrograma(NodoAST):
-    """Contiene la lista principal de todos los comandos del script."""
+    """
+    Representa el nodo raíz del AST. 
+    Actúa como contenedor global de la secuencia de sentencias ejecutables del script.
+    """
     comandos: List[NodoAST] = field(default_factory=list)
 
 # ==========================================
-# NODOS HOJA (Comandos de una línea)
+# NODOS HOJA (Operaciones Atómicas)
 # ==========================================
 @dataclass
 class NodoComandoSimple(NodoAST):
-    """Maneja las acciones directas: encender, apagar, esperar."""
-    accion: str      # ej: "encender", "apagar", "esperar"
-    parametro: str   # ej: "luz_sala", "aire_acondicionado", "10"
+    """
+    Representa instrucciones terminales que no contienen bloques anidados.
+    Maneja las acciones de hardware directo (ej: encender, apagar) o del sistema (esperar).
+    """
+    accion: str      # Identificador de la instrucción (ej: "encender")
+    parametro: str   # Argumento pasado a la instrucción (ej: "luz_patio")
 
 # ==========================================
-# NODOS RAMA (Bloques con código adentro)
+# NODOS RAMA (Estructuras de Control de Flujo)
 # ==========================================
 @dataclass
 class NodoCondicional(NodoAST):
-    """Maneja la estructura de control 'si'."""
-    variable: str           # ej: "temp"
-    operador: str           # ej: ">"
-    valor_comparacion: str  # ej: "24"
-    bloque: List[NodoAST] = field(default_factory=list) # Los comandos que van entre las llaves
+    """
+    Representa una bifurcación de control de flujo basada en una expresión relacional.
+    Almacena los operandos, el operador y el bloque de sentencias subordinadas.
+    """
+    variable: str           # Operando izquierdo (ej: "hora")
+    operador: str           # Operador relacional (ej: ">", "==")
+    valor_comparacion: str  # Operando derecho (ej: "18")
+    bloque: List[NodoAST] = field(default_factory=list) # Cuerpo del condicional
 
 @dataclass
 class NodoRepeticion(NodoAST):
-    """Maneja la estructura de control 'repetir'."""
-    iteraciones: str        # ej: "3"
-    bloque: List[NodoAST] = field(default_factory=list) # Los comandos que van entre las llaves
+    """
+    Representa una estructura iterativa de ciclo acotado.
+    Define la cantidad de iteraciones estáticas y encapsula el bloque de código a repetir.
+    """
+    iteraciones: str        # Límite del ciclo (ej: "3")
+    bloque: List[NodoAST] = field(default_factory=list) # Cuerpo del ciclo
