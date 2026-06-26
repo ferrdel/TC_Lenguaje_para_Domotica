@@ -1,0 +1,12 @@
+=== REPORTE DE ANÁLISIS SINTÁCTICO: CP5_Valido.txt ===
+
+[CÓDIGO ORIGINAL]
+esperar(2);
+si (temperatura > 26) {
+    encender(aire_acondicionado);
+    esperar(15);
+}
+apagar(ventilador_auxiliar);
+
+[RESULTADOS]
+ESTADO: ✅ Aprobado (AST Generado correctamente)

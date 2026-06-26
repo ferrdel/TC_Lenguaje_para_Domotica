@@ -1,0 +1,16 @@
+=== REPORTE DE ANÁLISIS SINTÁCTICO: CP12_Invalido.txt ===
+
+[CÓDIGO ORIGINAL]
+encender(ventilador);
+
+repetir (infinito) 
+    encender(parpadeo);
+    esperar(1);
+}
+
+apagar(ventilador);
+
+[RESULTADOS]
+ESTADO: ❌ Rechazado (Errores Sintácticos)
+- Error Sintáctico [L:3, C:10]: Se esperaba 'NUMERO', pero se encontró 'IDENTIFICADOR'
+- Efecto Colateral [L:6]: Símbolo '}' huérfano al final del archivo

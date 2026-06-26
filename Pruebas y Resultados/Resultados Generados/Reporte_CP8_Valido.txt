@@ -1,0 +1,15 @@
+=== REPORTE DE ANÁLISIS SINTÁCTICO: CP8_Valido.txt ===
+
+[CÓDIGO ORIGINAL]
+si (hora > 22) {
+    encender(alarma_perimetral);
+    repetir (3) {
+        si (movimiento_patio == 1) {
+            encender(reflector_exterior);
+            esperar(5);
+        }
+    }
+}
+
+[RESULTADOS]
+ESTADO: ✅ Aprobado (AST Generado correctamente)

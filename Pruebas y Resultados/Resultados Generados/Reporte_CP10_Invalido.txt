@@ -1,0 +1,14 @@
+=== REPORTE DE ANÁLISIS SINTÁCTICO: CP10_Invalido.txt ===
+
+[CÓDIGO ORIGINAL]
+encender(luz_patio);
+esperar(5);
+luces_raras;
+si (hora > hola ) {
+    apagar(computadora123);
+}
+
+
+[RESULTADOS]
+ESTADO: ❌ Rechazado (Errores Sintácticos)
+- Error Sintáctico [L:3]: Instrucción no válida 'luces_raras'. Se esperaba un comando (encender, apagar, si, esperar, repetir).

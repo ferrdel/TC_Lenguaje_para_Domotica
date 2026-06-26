@@ -1,0 +1,12 @@
+=== REPORTE DE ANÁLISIS SINTÁCTICO: CP9_Valido.txt ===
+
+[CÓDIGO ORIGINAL]
+apagar(luces_dormitorio);
+encender(cafetera_cocina);
+esperar(10);
+si (luminosidad_exterior > 50) {
+    apagar(luces_sala);
+}
+
+[RESULTADOS]
+ESTADO: ✅ Aprobado (AST Generado correctamente)

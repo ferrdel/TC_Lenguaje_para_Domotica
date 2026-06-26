@@ -1,0 +1,19 @@
+=== REPORTE DE ANÁLISIS SINTÁCTICO: CP3_Valido.txt ===
+
+[CÓDIGO ORIGINAL]
+si (estado_alarma == activado) {
+    encender(luces_emergencia);
+    esperar(5);
+    apagar(luces_emergencia);
+    encender(sirena);
+}
+
+repetir (10) {
+    esperar(2);
+    encender(flash_patio);
+    esperar(1);
+    apagar(flash_patio);
+}
+
+[RESULTADOS]
+ESTADO: ✅ Aprobado (AST Generado correctamente)

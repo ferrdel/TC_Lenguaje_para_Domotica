@@ -9,47 +9,55 @@ import zipfile
 # [MÓDULO DE VISUALIZACIÓN] - RECORRIDO DEL AST (TREE WALK)
 # ========================================================
 def construir_grafo_recursivo(nodo, dot):
-    """
-    Realiza un recorrido recursivo en profundidad (Depth-First Search) sobre el Árbol 
-    de Sintaxis Abstracta en memoria para generar una representación visual mediante Graphviz.
-    Mapea las clases de dominio (Nodos) a atributos gráficos (formas y colores).
-    """
     if not nodo:
         return
 
-    # Utilización de la dirección de memoria como Identificador Único Universal (UUID) para Graphviz
     nodo_id = str(id(nodo))
     clase_nodo = nodo.__class__.__name__
 
-    forma = 'ellipse'
-    color_fondo = '#EAEDED'
+    # Estilos por defecto (Modernos)
+    forma = 'box'
+    estilo = 'filled, rounded' # Bordes suaves
+    color_fondo = '#F2F4F4'
+    color_borde = '#BDC3C7'
+    color_texto = '#2C3E50'
     etiqueta = "Desconocido"
     ramas = []
 
-    # [MAPEO DE DATOS A UI]: Traducción de la estructura abstracta a elementos visuales
     if clase_nodo == "NodoPrograma":
         etiqueta = "Programa"
-        color_fondo = '#AED6F1'
+        color_fondo = '#2E86C1' # Combina con el botón principal
+        color_borde = '#1B4F72'
+        color_texto = 'white'
         ramas = nodo.comandos
     elif clase_nodo == "NodoComandoSimple":
-        etiqueta = f"{nodo.accion}({nodo.parametro});"
-        forma = 'box'
-        color_fondo = '#D4EFDF'
+        etiqueta = f"{nodo.accion}\n({nodo.parametro})"
+        color_fondo = '#E8F8F5' # Verde agua muy suave
+        color_borde = '#1ABC9C'
+        ramas = []
     elif clase_nodo == "NodoCondicional":
-        etiqueta = f"SI ({nodo.variable} {nodo.operador} {nodo.valor_comparacion})"
-        forma = 'diamond'
-        color_fondo = '#FCF3CF'
+        etiqueta = f"SI\n{nodo.variable} {nodo.operador} {nodo.valor_comparacion}"
+        color_fondo = '#FEF9E7' # Amarillo pastel
+        color_borde = '#F1C40F'
         ramas = nodo.bloque
     elif clase_nodo == "NodoRepeticion":
-        etiqueta = f"REPETIR ({nodo.iteraciones})"
-        forma = 'hexagon'
-        color_fondo = '#EBDEF0'
+        etiqueta = f"REPETIR\n({nodo.iteraciones})"
+        color_fondo = '#F5EEF8' # Púrpura muy suave
+        color_borde = '#AF7AC5'
         ramas = nodo.bloque
 
-    # Instanciación del vértice (nodo) en el motor gráfico
-    dot.node(name=nodo_id, label=etiqueta, shape=forma, style='filled', fillcolor=color_fondo)
+    # Aplicamos el estilo al nodo
+    dot.node(
+        name=nodo_id, 
+        label=etiqueta, 
+        shape=forma, 
+        style=estilo, 
+        fillcolor=color_fondo, 
+        color=color_borde,
+        fontcolor=color_texto,
+        penwidth='1.5' # Borde un poquito más grueso
+    )
 
-    # Resolución de las aristas (edges) hacia los nodos subordinados
     for hijo in ramas:
         if hijo is not None:
             hijo_id = str(id(hijo))
@@ -98,11 +106,22 @@ def procesar_script_completo(codigo, nombre_archivo):
     grafo = None
     if parser and not parser.errores and hasattr(parser, 'arbol_ast') and parser.arbol_ast:
         grafo = graphviz.Digraph()
-        grafo.attr(rankdir='TB', size='9,8')
-        grafo.attr('node', fontname='Helvetica', fontsize='11')
-        grafo.attr('edge', color='gray', arrowhead='vee', arrowsize='1')
+        
+        # Atributos globales modernos para el grafo
+        grafo.attr(
+            rankdir='TB', 
+            size='9,8', 
+            bgcolor='transparent',
+            splines='spline', # Líneas curvas y suaves
+            nodesep='0.5',
+            ranksep='0.8'
+        )
+        
+        # Atributos globales para Nodos y Flechas
+        grafo.attr('node', fontname='Segoe UI, Helvetica, sans-serif', fontsize='10', margin='0.2,0.1')
+        grafo.attr('edge', color='#85929E', penwidth='1.2', arrowhead='vee', arrowsize='0.7')
+        
         construir_grafo_recursivo(parser.arbol_ast, grafo)
-
     return reporte, grafo
 
 
@@ -110,12 +129,49 @@ def procesar_script_completo(codigo, nombre_archivo):
 # [INTERFAZ REACTIVA] - CONTROLADOR PRINCIPAL (STREAMLIT)
 # ========================================================
 st.set_page_config(page_title="Compilador Domótica", layout="wide")
-st.title("🏠 Analizador Sintáctico - Domótica")
+st.markdown("""
+    <h1 style='text-align: center; background: -webkit-linear-gradient(#2E86C1, #85C1E9); 
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;'>
+    🏠 Analizador Sintáctico - Domótica
+    </h1>
+    <hr>
+""", unsafe_allow_html=True)
+
+# ========================================================
+# [PERSONALIZACIÓN UI] - INYECCIÓN DE CSS
+# ========================================================
+st.markdown("""
+<style>
+    /* Estilo moderno para todos los botones */
+    div.stButton > button:first-child {
+        background-color: #2E86C1;
+        color: white;
+        border-radius: 8px;
+        border: none;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+    
+    /* Efecto Hover (cuando pasas el mouse) */
+    div.stButton > button:first-child:hover {
+        background-color: #1B4F72;
+        box-shadow: 0 6px 8px rgba(0,0,0,0.2);
+        transform: translateY(-2px);
+    }
+    
+    /* Suavizar los bordes de la consola y el grafo */
+    div[data-testid="stContainer"] {
+        border-radius: 12px;
+        padding: 10px;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 col_izq, col_der = st.columns([1, 2], gap="large")
 
 with col_izq:
-    st.subheader("Control de Archivos")
+    st.subheader("Carga de archivos")
     
     # Manejo explícito del estado de sesión para permitir resets limpios de la UI
     if "uploader_key" not in st.session_state:
@@ -131,15 +187,50 @@ with col_izq:
     
     archivo_actual = None
     nombres_archivos = {}
+    
     if archivos_subidos:
         nombres_archivos = {archivo.name: archivo for archivo in archivos_subidos}
-        archivo_seleccionado = st.selectbox("📂 Script en análisis:", options=list(nombres_archivos.keys()))
+        lista_nombres = list(nombres_archivos.keys())
+        
+        # [CONTROL DE ESTADO]: Inicialización del índice de navegación en memoria
+        if "file_index" not in st.session_state:
+            st.session_state.file_index = 0
+            
+        # Prevención de desbordamiento de índice ante la eliminación en caliente de archivos
+        if st.session_state.file_index >= len(lista_nombres):
+            st.session_state.file_index = 0
+            
+        # [NAVEGACIÓN RÁPIDA]: Controles de paginación bidireccional
+        col_nav1, col_nav2 = st.columns(2)
+        with col_nav1:
+            if st.button("⬅️ Anterior", use_container_width=True, disabled=(st.session_state.file_index == 0)):
+                st.session_state.file_index -= 1
+                st.rerun()
+        with col_nav2:
+            if st.button("Siguiente ➡️", use_container_width=True, disabled=(st.session_state.file_index == len(lista_nombres) - 1)):
+                st.session_state.file_index += 1
+                st.rerun()
+                
+        # Sincronización del controlador selectbox con el estado de los botones
+        archivo_seleccionado = st.selectbox(
+            "📂 Script en análisis:", 
+            options=lista_nombres, 
+            index=st.session_state.file_index
+        )
+        
+        if lista_nombres.index(archivo_seleccionado) != st.session_state.file_index:
+            st.session_state.file_index = lista_nombres.index(archivo_seleccionado)
+            st.rerun()
+            
         archivo_actual = nombres_archivos[archivo_seleccionado]
     
     btn_limpiar = st.button("Limpiar Todo", width="stretch")
 
     if btn_limpiar:
         st.session_state.uploader_key += 1
+        # Se reinicia el índice al limpiar la bandeja de entrada
+        if "file_index" in st.session_state:
+            st.session_state.file_index = 0
         st.rerun()
 
     st.markdown("---")
@@ -189,11 +280,11 @@ with col_izq:
                 errores_reales = [e for e in parser_temp.errores if e["tipo"] == "Real"]
                 errores_colaterales = [e for e in parser_temp.errores if e["tipo"] == "Consecuencia"]
                 if errores_reales:
-                    consola.markdown("### ❌ Errores Sintácticos Reales")
+                    consola.markdown("### ❌ Errores Sintácticos en Archivo")
                     for err in errores_reales:
                         consola.error(err["mensaje"])
                 if errores_colaterales:
-                    consola.markdown("### ⚠️ Efectos Colaterales (Esquirlas)")
+                    consola.markdown("### ⚠️ Errores en Cascada (Colaterales)")
                     for err in errores_colaterales:
                         consola.warning(err["mensaje"])
             else:

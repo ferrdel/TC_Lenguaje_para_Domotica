@@ -1,0 +1,18 @@
+=== REPORTE DE ANÁLISIS SINTÁCTICO: CP1_Valido.txt ===
+
+[CÓDIGO ORIGINAL]
+encender(luz_patio);
+esperar(5);
+
+si (hora > 18) {
+    encender(luces_sala);
+    apagar(alarma_dia);
+}
+
+repetir (3) {
+    apagar(riego);
+    esperar(10);
+}
+
+[RESULTADOS]
+ESTADO: ✅ Aprobado (AST Generado correctamente)

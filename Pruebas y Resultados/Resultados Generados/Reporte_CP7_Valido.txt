@@ -1,0 +1,10 @@
+=== REPORTE DE ANÁLISIS SINTÁCTICO: CP7_Valido.txt ===
+
+[CÓDIGO ORIGINAL]
+encender(sistema_riego);
+esperar(20);
+apagar(sistema_riego);
+encender(notificacion_celular);
+
+[RESULTADOS]
+ESTADO: ✅ Aprobado (AST Generado correctamente)

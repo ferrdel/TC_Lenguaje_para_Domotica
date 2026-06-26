@@ -1,0 +1,16 @@
+=== REPORTE DE ANÁLISIS SINTÁCTICO: CP11_Invalido.txt ===
+
+[CÓDIGO ORIGINAL]
+encender(luz_cuarto;
+esperar(10);
+
+si (temp > 20 {
+    apagar(estufa);
+}
+
+[RESULTADOS]
+ESTADO: ❌ Rechazado (Errores Sintácticos)
+- Error Sintáctico [L:1, C:20]: Se esperaba 'PAREN_DER', pero se encontró 'PUNTO_COMA'
+- Error Sintáctico [L:4, C:15]: Se esperaba 'PAREN_DER', pero se encontró 'LLAVE_IZQ'
+- Error Sintáctico [L:4]: Instrucción no válida '{'. Se esperaba un comando (encender, apagar, si, esperar, repetir).
+- Efecto Colateral [L:6]: Símbolo '}' huérfano al final del archivo

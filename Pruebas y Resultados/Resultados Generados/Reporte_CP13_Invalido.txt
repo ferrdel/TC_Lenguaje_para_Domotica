@@ -1,0 +1,16 @@
+=== REPORTE DE ANÁLISIS SINTÁCTICO: CP13_Invalido.txt ===
+
+[CÓDIGO ORIGINAL]
+encender(tele);
+apagar(luces_pieza);
+
+modo_cine_inventado;
+
+si (noche == 1) {
+    encender(luz_pasillo);
+    esperar(5);
+
+[RESULTADOS]
+ESTADO: ❌ Rechazado (Errores Sintácticos)
+- Error Sintáctico [L:4]: Instrucción no válida 'modo_cine_inventado'. Se esperaba un comando (encender, apagar, si, esperar, repetir).
+- Error Sintáctico [L:desconocida, C:desconocida]: Se esperaba 'LLAVE_DER', pero se encontró 'FIN_DE_ARCHIVO'
